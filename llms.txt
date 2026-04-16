@@ -1,0 +1,70 @@
+# AppLixir
+
+AppLixir is a web-first rewarded video advertising platform for HTML5 games and web apps.
+Publishers earn $4–15 CPM. Users watch a short video in exchange for an in-game reward.
+
+## SDK
+
+Current version: v6
+CDN URL: https://cdn.applixir.com/applixir.app.v6.0.1.js
+
+DEPRECATED (do not use): applixir.sdk2.1m.js, invokeApplixirVideoUnit(), zoneId/devId/gameId params
+
+## Integration (3 steps)
+
+Step 1: Add div container
+<div id="applixir-ad-container"></div>
+
+Step 2: Load SDK script
+<script type="text/javascript" src="https://cdn.applixir.com/applixir.app.v6.0.1.js"></script>
+
+Step 3: Initialize and call on user action
+const options = {
+  apiKey: "YOUR-API-KEY",
+  injectionElementId: "applixir-ad-container",
+  adStatusCallbackFn: (status) => { /* handle status */ },
+  adErrorCallbackFn: (error) => { /* handle error */ },
+};
+initializeAndOpenPlayer(options);
+
+## adStatusCallbackFn Status Values
+
+- "ad-watched" → user completed the video → GRANT REWARD
+- "ad-skipped" → user skipped → do NOT grant reward
+- "no-ad" → no fill available → do NOT grant reward
+- "ad-started" → playback started (informational)
+- "ad-loading" → fetching ad (show loading state)
+- "ad-error" → error occurred → do NOT grant reward
+
+## adErrorCallbackFn
+
+error.getError().data contains error details.
+
+## Application Class (advanced)
+
+const app = new Application(options);
+window.onload = () => { app.initialize(); };
+// then call app.openPlayer() on user action
+
+## Requirements
+
+- Must be triggered by explicit user interaction (click/tap) — no autoplay
+- Register your exact site URL in the AppLixir dashboard
+- Add ads.txt entries from dashboard to your domain root
+- Works with: HTML5, Phaser, PixiJS, Unity WebGL, Cocos, React, Vue, vanilla JS
+
+## Unity WebGL
+
+Use ApplixirWebGL.PlayVideo(callback). Positive result: PlayVideoResult.ADWatched.
+
+## Server-Side Callback (optional)
+
+Configure in dashboard → Callbacks. AppLixir POSTs signed HTTPS request to your endpoint on reward.
+
+## Links
+
+Sign up: https://client.applixir.com/register
+Dashboard: https://client.applixir.com
+Documentation: https://support.applixir.com
+Integration examples: https://github.com/applixirinc/applixir-integration
+Support: support@applixir.com

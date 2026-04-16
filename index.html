@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AppLixir – Basic HTML5 Example</title>
+
+  <!-- Step 1: Load AppLixir SDK v6 -->
+  <script type="text/javascript" src="https://cdn.applixir.com/applixir.app.v6.0.1.js"></script>
+
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 60px auto; text-align: center; }
+    button { padding: 12px 24px; font-size: 16px; cursor: pointer; background: #4CAF50; color: white; border: none; border-radius: 6px; }
+    button:hover { background: #45a049; }
+    #status { margin-top: 20px; font-size: 14px; color: #666; }
+    #reward { display: none; margin-top: 20px; padding: 16px; background: #e8f5e9; border-radius: 8px; color: #2e7d32; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <h1>My Game</h1>
+  <p>Watch a short video to earn a reward.</p>
+
+  <!-- Step 2: Ad player container -->
+  <div id="applixir-ad-container"></div>
+
+  <button id="watch-ad-btn">🎬 Watch Ad for +3 Lives</button>
+  <div id="status"></div>
+  <div id="reward">🎉 Reward granted! +3 lives added.</div>
+
+  <script>
+    const statusEl = document.getElementById("status");
+    const rewardEl = document.getElementById("reward");
+
+    // Step 3: Configure and trigger
+    const options = {
+      apiKey: "YOUR-API-KEY-HERE", // Get from https://client.applixir.com
+      injectionElementId: "applixir-ad-container",
+
+      adStatusCallbackFn: (status) => {
+        statusEl.textContent = "Ad status: " + status;
+
+        if (status === "ad-watched") {
+          // ✅ Grant the reward
+          rewardEl.style.display = "block";
+          // TODO: Add your game reward logic here
+        } else if (status === "no-ad") {
+          statusEl.textContent = "No ad available right now. Try again later.";
+        } else if (status === "ad-loading") {
+          statusEl.textContent = "Loading ad...";
+        }
+      },
+
+      adErrorCallbackFn: (error) => {
+        console.error("AppLixir error:", error.getError().data);
+        statusEl.textContent = "Ad error — try again.";
+      },
+    };
+
+    document.getElementById("watch-ad-btn").addEventListener("click", () => {
+      rewardEl.style.display = "none";
+      initializeAndOpenPlayer(options);
+    });
+  </script>
+
+</body>
+</html>
