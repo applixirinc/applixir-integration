@@ -38,4 +38,7 @@ the origin `"null"`, which breaks two things:
 - [ ] JavaScript, DOM storage, and cookies enabled (see the props in `RewardedAd.jsx`).
 - [ ] Reward granted server-side via the web callback; the `reward` message is optimistic UI.
 
+**Using an AI agent?** Copy [`prompts/react-native.md`](../../prompts/react-native.md)
+into Claude Code / Codex / Cursor and it implements this for you.
+
 Full walkthrough: https://support.applixir.com/applixir-integration/react-integration/step-4-react-native

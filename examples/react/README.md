@@ -43,4 +43,7 @@ function WatchAdButton() {
   script differ. See the full guide:
   https://support.applixir.com/applixir-integration/react-integration/step-3-framework-recipes
 
+**Using an AI agent?** Copy [`prompts/react.md`](../../prompts/react.md) into Claude
+Code / Codex / Cursor and it implements this for you.
+
 Full reference: https://support.applixir.com/applixir-integration/react-integration/

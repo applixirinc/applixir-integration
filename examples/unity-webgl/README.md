@@ -36,4 +36,7 @@ Unity's `SendMessage` only accepts a string, so the bridge forwards **`status.ty
 
 For fraud-proof rewards, also use the server-side web callback as the source of truth.
 
+**Using an AI agent?** Copy [`prompts/unity.md`](../../prompts/unity.md) into Claude
+Code / Codex / Cursor and it implements this for you.
+
 Full docs: https://support.applixir.com

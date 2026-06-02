@@ -95,10 +95,13 @@ of truth (see [full docs](https://support.applixir.com)).
 
 ## AI Coding Assistant
 
-If you're using Claude Code, GitHub Copilot, Cursor, or another AI tool:
-the [`CLAUDE.md`](CLAUDE.md) and [`llms.txt`](llms.txt) files in this repo root
-contain a complete, AI-optimized reference. Your AI assistant will use them to
-generate correct integration code.
+If you're using Claude Code, Codex, GitHub Copilot, Cursor, or another AI tool:
+
+- **Ready-made prompts** — copy a [`prompts/`](prompts/) file for your platform
+  ([HTML5](prompts/html5.md) · [React](prompts/react.md) · [React Native](prompts/react-native.md) · [Unity](prompts/unity.md)),
+  paste it into your agent, fill in your API key, and it implements the integration.
+- **Full reference** — [`CLAUDE.md`](CLAUDE.md) and [`llms.txt`](llms.txt) in this repo
+  root give your agent the complete, AI-optimized API so it generates correct code.
 
 ---
 
