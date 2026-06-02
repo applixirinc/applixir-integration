@@ -25,12 +25,14 @@ mergeInto(LibraryManager.library, {
       injectionElementId: "applixir-ad-container",
 
       adStatusCallbackFn: function(status) {
-        // Send status back to Unity
-        SendMessage(callbackObjectName, callbackMethodName, status);
+        // status is an OBJECT { type, ad?, error? }. Unity SendMessage only
+        // accepts a string, so forward status.type (e.g. "complete").
+        SendMessage(callbackObjectName, callbackMethodName, status.type);
       },
 
       adErrorCallbackFn: function(error) {
-        SendMessage(callbackObjectName, callbackMethodName, "ad-error");
+        // Bridge-internal sentinel (not an SDK status type).
+        SendMessage(callbackObjectName, callbackMethodName, "error");
       },
     };
 

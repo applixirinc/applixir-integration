@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AppLixir – Basic HTML5 Example</title>
 
-  <!-- Step 1: Load AppLixir SDK v6 -->
-  <script type="text/javascript" src="https://cdn.applixir.com/applixir.app.v6.0.1.js"></script>
+  <!-- Step 1: Load the AppLixir SDK (pin to a specific version for production) -->
+  <script type="text/javascript" src="https://cdn.applixir.com/applixir.app.v6.1.0.js"></script>
 
   <style>
     body { font-family: sans-serif; max-width: 600px; margin: 60px auto; text-align: center; }
@@ -32,21 +32,26 @@
     const statusEl = document.getElementById("status");
     const rewardEl = document.getElementById("reward");
 
-    // Step 3: Configure and trigger
+    // Step 3: Configure and trigger.
+    //
+    // adStatusCallbackFn receives a STATUS OBJECT: { type, ad?, error? }.
+    // The "watched it through" signal is status.type === "complete".
     const options = {
       apiKey: "YOUR-API-KEY-HERE", // Get from https://client.applixir.com
       injectionElementId: "applixir-ad-container",
 
       adStatusCallbackFn: (status) => {
-        statusEl.textContent = "Ad status: " + status;
+        statusEl.textContent = "Ad status: " + status.type;
 
-        if (status === "ad-watched") {
-          // ✅ Grant the reward
+        if (status.type === "complete") {
+          // ✅ User watched the full ad — show the optimistic reward.
+          //    Grant the persistent reward from your server-side web callback.
           rewardEl.style.display = "block";
           // TODO: Add your game reward logic here
-        } else if (status === "no-ad") {
-          statusEl.textContent = "No ad available right now. Try again later.";
-        } else if (status === "ad-loading") {
+        } else if (status.type === "allAdsCompleted") {
+          // Fires at the end of any ad, AND when there was no ad to show.
+          // Use it to re-enable the button / clean up — not to grant a reward.
+        } else if (status.type === "loaded") {
           statusEl.textContent = "Loading ad...";
         }
       },
