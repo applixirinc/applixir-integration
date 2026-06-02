@@ -14,8 +14,8 @@ Official integration examples and reference for [AppLixir](https://www.applixir.
 ### 2. Add to your HTML
 
 ```html
-<!-- 1. Load the SDK -->
-<script type="text/javascript" src="https://cdn.applixir.com/applixir.app.v6.0.1.js"></script>
+<!-- 1. Load the SDK (pin to a specific version for production) -->
+<script type="text/javascript" src="https://cdn.applixir.com/applixir.app.v6.1.0.js"></script>
 
 <!-- 2. Add the player container -->
 <div id="applixir-ad-container"></div>
@@ -25,9 +25,10 @@ Official integration examples and reference for [AppLixir](https://www.applixir.
 const options = {
   apiKey: "YOUR-API-KEY-HERE",
   injectionElementId: "applixir-ad-container",
+  // adStatusCallbackFn receives a STATUS OBJECT: { type, ad?, error? }
   adStatusCallbackFn: (status) => {
-    if (status === "ad-watched") {
-      grantReward(); // Give the user their reward
+    if (status.type === "complete") {
+      grantReward(); // user watched it through — grant the reward
     }
   },
   adErrorCallbackFn: (error) => {
@@ -49,36 +50,47 @@ That's it. [Full documentation →](https://support.applixir.com)
 
 | Platform | Location | Description |
 |---|---|---|
-| Vanilla JS | `/examples/html5-basic/` | Minimal working example |
-| Vanilla JS | `/examples/html5-with-rewards/` | Full reward + error handling |
-| Phaser 3 | `/examples/phaser3/` | Integration inside a Phaser Scene |
-| React | `/examples/react/` | `useRewardedAd` hook |
-| Unity WebGL | `/examples/unity-webgl/` | Unity package + jslib bridge |
+| Vanilla JS | [`/examples/html5/`](examples/html5/) | Minimal working example with reward + error handling |
+| Phaser 3 | [`/examples/phaser3/`](examples/phaser3/) | Integration inside a Phaser Scene |
+| React (web) | [`/examples/react/`](examples/react/) | `useRewardedAd` hook (JS + TS) + component |
+| React Native | [`/examples/react-native/`](examples/react-native/) | WebView integration (hosted page + RN screen) |
+| Unity WebGL | [`/examples/unity-webgl/`](examples/unity-webgl/) | Unity manager + jslib bridge |
 
 ---
 
 ## Key Concepts
 
-**adStatusCallbackFn statuses:**
+`adStatusCallbackFn` receives a **status object** — `{ type, ad?, error? }` — on
+every ad lifecycle event. `type` is one of:
 
-| Status | Meaning | Grant Reward? |
+```
+"loaded" | "started" | "firstQuartile" | "midpoint" | "thirdQuartile"
+| "complete" | "allAdsCompleted" | "click" | "paused" | "skipped"
+| "manuallyEnded" | "consentDeclined"
+```
+
+| `status.type` | Meaning | Grant Reward? |
 |---|---|---|
-| `ad-watched` | Full video completed | ✅ Yes |
-| `ad-skipped` | User skipped | ❌ No |
-| `no-ad` | No fill right now | ❌ No |
-| `ad-started` | Playback began | — |
-| `ad-loading` | Fetching ad | — |
-| `ad-error` | Playback error | ❌ No |
+| `complete` | User watched the full video | ✅ Yes |
+| `skipped` | User skipped | ❌ No |
+| `manuallyEnded` | User closed the ad early | ❌ No |
+| `allAdsCompleted` | Ad finished **or** no ad was available | ❌ No (use to clean up) |
+| `loaded` / `started` / quartiles | Playback progress | — |
+| `consentDeclined` | User declined personalized-ads consent | ❌ No |
 
-**Only grant rewards on `"ad-watched"`.**
+**Grant rewards only on `status.type === "complete"`.** `allAdsCompleted` fires
+at the end of *any* ad and when there was no ad to show, so it is not a reward
+signal. For fraud-proof rewards, use the server-side web callback as the source
+of truth (see [full docs](https://support.applixir.com)).
 
 ---
 
 ## AI Coding Assistant
 
 If you're using Claude Code, GitHub Copilot, Cursor, or another AI tool:
-the `CLAUDE.md` file in this repo root contains a complete, AI-optimized reference.
-Your AI assistant will use it automatically to generate correct integration code.
+the [`CLAUDE.md`](CLAUDE.md) and [`llms.txt`](llms.txt) files in this repo root
+contain a complete, AI-optimized reference. Your AI assistant will use them to
+generate correct integration code.
 
 ---
 
@@ -86,6 +98,7 @@ Your AI assistant will use it automatically to generate correct integration code
 
 - Any modern browser (Chrome, Firefox, Safari, Edge)
 - Works with: HTML5, Phaser, PixiJS, Unity WebGL, Cocos, React, Vue, vanilla JS
+- React Native: supported via a WebView pointed at a real `https://` URL (see [`/examples/react-native/`](examples/react-native/))
 - No backend changes required for basic integration
 - `ads.txt` required for full fill rates (add entries from your AppLixir dashboard)
 

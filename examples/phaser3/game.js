@@ -3,7 +3,7 @@
 
 // ─── In your HTML file ────────────────────────────────────────────────────────
 // Add BEFORE your Phaser script tag:
-// <script src="https://cdn.applixir.com/applixir.app.v6.0.1.js"></script>
+// <script src="https://cdn.applixir.com/applixir.app.v6.1.0.js"></script>
 // <div id="applixir-ad-container" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:9999;display:none;"></div>
 
 // ─── In your Phaser Scene ─────────────────────────────────────────────────────
@@ -29,21 +29,22 @@ class GameScene extends Phaser.Scene {
     const container = document.getElementById("applixir-ad-container");
     if (container) container.style.display = "block";
 
+    // adStatusCallbackFn receives a STATUS OBJECT: { type, ad?, error? }.
+    // The "watched it through" signal is status.type === "complete".
     const options = {
       apiKey: "YOUR-API-KEY-HERE", // Get from https://client.applixir.com
       injectionElementId: "applixir-ad-container",
 
       adStatusCallbackFn: (status) => {
-        console.log("AppLixir status:", status);
+        console.log("AppLixir status:", status.type);
 
-        if (status === "ad-watched") {
-          // ✅ Grant reward — user watched the full ad
+        if (status.type === "complete") {
+          // ✅ Grant reward — user watched the full ad.
           this.grantExtraLife();
+        } else if (status.type === "allAdsCompleted") {
+          // End of any ad, or no ad available — tear down the overlay.
           this.hideAdContainer();
-        } else if (status === "no-ad") {
-          this.showMessage("No ads available right now.");
-          this.hideAdContainer();
-        } else if (status === "ad-skipped") {
+        } else if (status.type === "skipped" || status.type === "manuallyEnded") {
           this.hideAdContainer();
         }
       },

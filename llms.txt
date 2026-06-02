@@ -5,8 +5,9 @@ Publishers earn $4–15 CPM. Users watch a short video in exchange for an in-gam
 
 ## SDK
 
-Current version: v6
-CDN URL: https://cdn.applixir.com/applixir.app.v6.0.1.js
+Current version: v6.1.0
+CDN URL: https://cdn.applixir.com/applixir.app.v6.1.0.js
+Exposes two globals on window: initializeAndOpenPlayer(options) and Application(options).
 
 DEPRECATED (do not use): applixir.sdk2.1m.js, invokeApplixirVideoUnit(), zoneId/devId/gameId params
 
@@ -16,29 +17,39 @@ Step 1: Add div container
 <div id="applixir-ad-container"></div>
 
 Step 2: Load SDK script
-<script type="text/javascript" src="https://cdn.applixir.com/applixir.app.v6.0.1.js"></script>
+<script type="text/javascript" src="https://cdn.applixir.com/applixir.app.v6.1.0.js"></script>
 
 Step 3: Initialize and call on user action
 const options = {
   apiKey: "YOUR-API-KEY",
   injectionElementId: "applixir-ad-container",
-  adStatusCallbackFn: (status) => { /* handle status */ },
-  adErrorCallbackFn: (error) => { /* handle error */ },
+  adStatusCallbackFn: (status) => { if (status.type === "complete") grantReward(); },
+  adErrorCallbackFn: (error) => { console.error(error.getError().data); },
 };
 initializeAndOpenPlayer(options);
 
-## adStatusCallbackFn Status Values
+## adStatusCallbackFn — receives a STATUS OBJECT, not a string
 
-- "ad-watched" → user completed the video → GRANT REWARD
-- "ad-skipped" → user skipped → do NOT grant reward
-- "no-ad" → no fill available → do NOT grant reward
-- "ad-started" → playback started (informational)
-- "ad-loading" → fetching ad (show loading state)
-- "ad-error" → error occurred → do NOT grant reward
+The callback argument is an object: { type, ad?, error? }. ALWAYS read status.type.
+Comparing status to a string (e.g. status === "ad-watched") is WRONG and will never match.
+
+status.type is one of:
+- "loaded" → ad data available
+- "started" → playback started
+- "firstQuartile" / "midpoint" / "thirdQuartile" → playback progress
+- "complete" → user watched the full ad → GRANT REWARD
+- "allAdsCompleted" → fires at the end of ANY ad AND when no ad was available → do NOT grant; use to clean up
+- "click" → ad clicked
+- "paused" → ad paused
+- "skipped" → user skipped → do NOT grant reward
+- "manuallyEnded" → user closed the ad early → do NOT grant reward
+- "consentDeclined" → user declined personalized-ads consent → do NOT grant reward
+
+GRANT REWARD ONLY when status.type === "complete".
 
 ## adErrorCallbackFn
 
-error.getError().data contains error details.
+error.getError().data contains error details ({ type, errorCode, errorMessage, ... }).
 
 ## Application Class (advanced)
 
@@ -53,13 +64,33 @@ window.onload = () => { app.initialize(); };
 - Add ads.txt entries from dashboard to your domain root
 - Works with: HTML5, Phaser, PixiJS, Unity WebGL, Cocos, React, Vue, vanilla JS
 
+## React (web)
+
+No npm package — load the CDN script (in index.html or injected via the hook).
+adStatusCallbackFn still receives the status OBJECT; reward on status.type === "complete".
+Example hook (JS + TS) + component: /examples/react/ in this repo.
+Full guide: https://support.applixir.com/applixir-integration/react-integration/
+
+## React Native (IMPORTANT)
+
+AppLixir is a browser SDK; in React Native you run it inside react-native-webview.
+The WebView MUST load a real https:// URL on your registered domain via source={{ uri }}.
+NEVER use source={{ html: ... }} or a file:// URL: that gives the page origin "null", which
+breaks the consent postMessage handshake ("Invalid target origin 'null'") and makes the ad
+server return "AdError 303: No Ads" because it cannot match your registered domain.
+Pattern: host an ad page (loads SDK, postMessage bridge) on your domain; point the WebView at it.
+Example (hosted page + RN screen): /examples/react-native/ in this repo.
+Full guide: https://support.applixir.com/applixir-integration/react-integration/step-4-react-native
+
 ## Unity WebGL
 
 Use ApplixirWebGL.PlayVideo(callback). Positive result: PlayVideoResult.ADWatched.
 
-## Server-Side Callback (optional)
+## Server-Side Callback (optional, recommended)
 
-Configure in dashboard → Callbacks. AppLixir POSTs signed HTTPS request to your endpoint on reward.
+Configure in dashboard → Callbacks. AppLixir POSTs a signed HTTPS request to your endpoint
+after server-side validation of each completed ad. This is the source of truth for granting
+persistent rewards; treat the client-side "complete" as optimistic UI only.
 
 ## Links
 

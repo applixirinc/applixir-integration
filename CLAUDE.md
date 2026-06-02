@@ -7,19 +7,20 @@
 
 AppLixir is a **web-first rewarded video ad platform** for HTML5 games and web apps.
 Publishers earn $4–15 CPM. Users watch a short video in exchange for an in-game reward.
-It is NOT a mobile SDK — it is built specifically for browser environments.
+It is a **browser** SDK. It runs anywhere a browser context exists — including inside
+a React Native WebView, with one rule (see React Native below).
 
 Sign up at: https://client.applixir.com/register
-Documentation: https://support.applixir.com/hc/en-us
+Documentation: https://support.applixir.com
 
 ---
 
 ## Current SDK Version
 
-**v6** — always load from the CDN:
+**v6.1.0** — always load from the CDN:
 
 ```html
-<script type="text/javascript" src="https://cdn.applixir.com/applixir.app.v6.0.1.js"></script>
+<script type="text/javascript" src="https://cdn.applixir.com/applixir.app.v6.1.0.js"></script>
 ```
 
 > ⚠️ DEPRECATED: Do NOT use older patterns like `invokeApplixirVideoUnit()`, `zoneId/devId/gameId`,
@@ -48,7 +49,7 @@ Place this div where you want the video player to appear (typically a full-scree
 In your `<head>` or before `</body>`:
 
 ```html
-<script type="text/javascript" src="https://cdn.applixir.com/applixir.app.v6.0.1.js"></script>
+<script type="text/javascript" src="https://cdn.applixir.com/applixir.app.v6.1.0.js"></script>
 ```
 
 ### Step 4 — Initialize and show an ad
@@ -60,14 +61,17 @@ const options = {
   apiKey: "xxxx-xxxx-xxxx-xxxx",         // REQUIRED: your API key from the dashboard
   injectionElementId: "applixir-ad-container", // REQUIRED: ID of the div from Step 2
 
-  adStatusCallbackFn: (status) => {       // REQUIRED: handle ad lifecycle events
-    console.log("Ad status:", status);
-    if (status === "ad-watched") {
+  // REQUIRED: handle ad lifecycle events.
+  // status is an OBJECT: { type, ad?, error? }. Always read status.type.
+  adStatusCallbackFn: (status) => {
+    console.log("Ad status:", status.type);
+    if (status.type === "complete") {
       grantReward(); // ✅ User watched the full ad — give the reward
-    } else if (status === "no-ad") {
-      showNoAdMessage(); // No ad available right now
-    } else if (status === "ad-skipped") {
-      // User skipped — do NOT grant reward
+    } else if (status.type === "allAdsCompleted") {
+      // End of any ad, or no ad was available — clean up / re-enable the button.
+      // NOT a reward signal.
+    } else if (status.type === "skipped" || status.type === "manuallyEnded") {
+      // User skipped or closed early — do NOT grant reward
     }
   },
 
@@ -88,7 +92,7 @@ document.getElementById("watch-ad-btn").addEventListener("click", () => {
 const options = {
   apiKey: "xxxx-xxxx-xxxx-xxxx",
   injectionElementId: "applixir-ad-container",
-  adStatusCallbackFn: (status) => { /* same as above */ },
+  adStatusCallbackFn: (status) => { /* same as above — read status.type */ },
   adErrorCallbackFn: (error) => { /* same as above */ },
 };
 
@@ -107,18 +111,29 @@ document.getElementById("watch-ad-btn").addEventListener("click", () => {
 
 ---
 
-## `adStatusCallbackFn` — All Status Values
+## `adStatusCallbackFn` — the status is an OBJECT, not a string
 
-| Status | Meaning | Grant Reward? |
+The callback receives an **object** `{ type, ad?, error? }`. Always read
+`status.type`. Comparing `status` to a string (e.g. `status === "ad-watched"`)
+is **wrong** and will never match — that was an older API and is not how the SDK
+behaves.
+
+| `status.type` | Meaning | Grant Reward? |
 |---|---|---|
-| `"ad-watched"` | User watched the full video | ✅ YES |
-| `"ad-skipped"` | User skipped the ad | ❌ NO |
-| `"no-ad"` | No ad available for this user/geo right now | ❌ NO |
-| `"ad-started"` | Ad playback began | — (informational) |
-| `"ad-loading"` | Ad is being fetched/loaded | — (show a loading state) |
-| `"ad-error"` | An error occurred during playback | ❌ NO |
+| `"loaded"` | Ad data is available | — |
+| `"started"` | Ad playback began | — |
+| `"firstQuartile"` / `"midpoint"` / `"thirdQuartile"` | Playback progress (25/50/75%) | — |
+| `"complete"` | User watched the full video | ✅ YES |
+| `"allAdsCompleted"` | Fires at the end of **any** ad AND when **no ad** was available | ❌ NO (clean up) |
+| `"click"` | The ad was clicked | — |
+| `"paused"` | The ad is paused | — |
+| `"skipped"` | User skipped the ad | ❌ NO |
+| `"manuallyEnded"` | User closed the ad early | ❌ NO |
+| `"consentDeclined"` | User declined consent for personalized ads | ❌ NO |
 
-> ⚠️ Only grant in-game rewards when status === `"ad-watched"`. Never reward on other statuses.
+> ⚠️ Only grant in-game rewards when `status.type === "complete"`. `allAdsCompleted`
+> fires at the end of every ad and also when there was no ad to show, so it is NOT
+> a reward signal.
 
 ---
 
@@ -126,7 +141,7 @@ document.getElementById("watch-ad-btn").addEventListener("click", () => {
 
 ```javascript
 adErrorCallbackFn: (error) => {
-  const errorData = error.getError().data;
+  const errorData = error.getError().data; // { type, errorCode, errorMessage, ... }
   console.error("AppLixir error:", errorData);
   // Gracefully show user a message — don't crash the game
 }
@@ -142,7 +157,7 @@ adErrorCallbackFn: (error) => {
 <head>
   <meta charset="UTF-8">
   <title>My Game</title>
-  <script type="text/javascript" src="https://cdn.applixir.com/applixir.app.v6.0.1.js"></script>
+  <script type="text/javascript" src="https://cdn.applixir.com/applixir.app.v6.1.0.js"></script>
 </head>
 <body>
   <div id="applixir-ad-container"></div>
@@ -156,11 +171,11 @@ adErrorCallbackFn: (error) => {
       injectionElementId: "applixir-ad-container",
 
       adStatusCallbackFn: (status) => {
-        if (status === "ad-watched") {
+        if (status.type === "complete") {
           document.getElementById("reward-message").style.display = "block";
           // TODO: Add your reward logic here
-        } else if (status === "no-ad") {
-          alert("No ads available right now. Try again later.");
+        } else if (status.type === "allAdsCompleted") {
+          // ad finished or none available — nothing to reward here
         }
       },
 
@@ -194,20 +209,35 @@ For fraud-proof reward delivery, AppLixir can POST to your server when a reward 
 
 Configure in: AppLixir Dashboard → Callbacks → enter your endpoint URL + secret.
 
-AppLixir will send a signed HTTPS POST to your server after each verified ad completion.
-This is in addition to (not instead of) the client-side `adStatusCallbackFn`.
+AppLixir sends a signed HTTPS POST to your server after each verified ad completion.
+This is the source of truth for granting persistent rewards; treat the client-side
+`status.type === "complete"` as optimistic UI only.
 
 ---
 
 ## Platform-Specific Notes
 
+### React (web)
+Create a `useRewardedAd` hook — see `/examples/react/` in this repo (JS + TS + a
+component). Load the SDK script via the hook or add it to `public/index.html`.
+The callback still receives the status **object**; reward on `status.type === "complete"`.
+For Vite / Next.js / CRA specifics: https://support.applixir.com/applixir-integration/react-integration/
+
+### React Native (read this — it's where integrations fail)
+There is no native module. Run the HTML5 SDK inside `react-native-webview`.
+The WebView **must load a real `https://` URL** on your registered domain via
+`source={{ uri }}`. **Never** use `source={{ html: ... }}` or a `file://` URL: that
+gives the page origin `"null"`, which breaks the consent `postMessage` handshake
+(`Invalid target origin 'null'`) and makes the ad server return `AdError 303: No Ads`
+because it cannot match your registered domain. Host an ad page (loads the SDK +
+a `postMessage` bridge) on your domain and point the WebView at it.
+See `/examples/react-native/` and
+https://support.applixir.com/applixir-integration/react-integration/step-4-react-native
+
 ### Phaser 3
 Call `initializeAndOpenPlayer(options)` inside a Phaser Scene's button handler.
 Ensure the div `#applixir-ad-container` exists in your HTML, outside the Phaser canvas.
-
-### React
-Create a `useRewardedAd` hook — see `/examples/react/useRewardedAd.js` in this repo.
-Load the SDK script via `useEffect` on mount, or add it to `public/index.html`.
+See `/examples/phaser3/`.
 
 ### Unity WebGL
 Use the Unity package from AppLixir — see `/examples/unity-webgl/` in this repo.
@@ -221,22 +251,24 @@ Available in the WordPress plugin directory or via support.applixir.com.
 
 ## Common Mistakes
 
-1. **Calling `initializeAndOpenPlayer` before the SDK script loads** — always wait for `window.onload` if using the Application class.
-2. **Granting rewards on statuses other than `"ad-watched"`** — users will find workarounds.
-3. **Missing `ads.txt`** — significantly reduces fill rates. Add it to your domain root.
-4. **Using the v2 SDK** — `invokeApplixirVideoUnit` / `zoneId` / `devId` / `gameId` are deprecated. Use v6 with `apiKey`.
-5. **Triggering ads without user interaction** — browsers block autoplay. Must be triggered by a click or tap.
-6. **Testing on localhost with a real API key** — register your site URL in the dashboard. Localhost won't match.
+1. **Treating `status` as a string** — it's an object. Use `status.type === "complete"`, never `status === "ad-watched"`.
+2. **Granting rewards on `allAdsCompleted`** — it fires for skipped, completed, AND no-ad. Only `complete` means watched.
+3. **Calling `initializeAndOpenPlayer` before the SDK loads** — wait for `window.onload` (or the React hook's `ready` flag).
+4. **Missing `ads.txt`** — significantly reduces fill rates. Add it to your domain root.
+5. **Using the v2 SDK** — `invokeApplixirVideoUnit` / `zoneId` / `devId` / `gameId` are deprecated. Use v6.1.0 with `apiKey`.
+6. **Triggering ads without user interaction** — browsers block autoplay. Must be triggered by a click or tap.
+7. **Testing on localhost with a real API key** — register your site URL in the dashboard. Localhost won't match.
+8. **React Native with `source={{ html }}` / `file://`** — origin `"null"` → no consent and `AdError 303`. Load a real https URL.
 
 ---
 
 ## Testing
 
 1. Register your site URL in the AppLixir dashboard (exact domain match required)
-2. Deploy to that domain
+2. Deploy to that domain (not localhost)
 3. Open browser DevTools → Console
 4. Click your ad trigger button
-5. You should see `"ad-loading"` then `"ad-started"` then `"ad-watched"` in the console
+5. You should see the lifecycle in order: `loaded` → `started` → `firstQuartile` → `midpoint` → `thirdQuartile` → `complete`
 
 No test/sandbox API key is required — use your real API key from the start.
 

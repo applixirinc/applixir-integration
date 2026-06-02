@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rewarded</title>
+  <!-- Load the AppLixir SDK (pin to a specific version for production) -->
+  <script type="text/javascript" src="https://cdn.applixir.com/applixir.app.v6.1.0.js" async></script>
+</head>
+<body>
+  <!-- The player injects itself here -->
+  <div id="applixir-ad-container"></div>
+  <button id="watch">Watch ad</button>
+
+  <script>
+    // Bridge events back to React Native via postMessage.
+    function send(msg) {
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify(msg));
+      }
+    }
+
+    document.getElementById("watch").addEventListener("click", () => {
+      initializeAndOpenPlayer({
+        apiKey: "YOUR-API-KEY",
+        injectionElementId: "applixir-ad-container",
+
+        // adStatusCallbackFn receives a STATUS OBJECT: { type, ad?, error? }.
+        adStatusCallbackFn: (status) => {
+          if (status.type === "complete") {
+            // Watched through → tell native to grant the reward (optimistic).
+            send({ type: "reward" });
+          } else if (["skipped", "manuallyEnded", "allAdsCompleted"].includes(status.type)) {
+            send({ type: "closed", reason: status.type });
+          }
+        },
+
+        adErrorCallbackFn: (error) => {
+          send({ type: "error", data: error.getError().data });
+        },
+      });
+    });
+  </script>
+</body>
+</html>
