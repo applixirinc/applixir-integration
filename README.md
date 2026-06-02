@@ -98,7 +98,7 @@ of truth (see [full docs](https://support.applixir.com)).
 If you're using Claude Code, Codex, GitHub Copilot, Cursor, or another AI tool:
 
 - **Ready-made prompts** — copy a [`prompts/`](prompts/) file for your platform
-  ([HTML5](prompts/html5.md) · [React](prompts/react.md) · [React Native](prompts/react-native.md) · [Unity](prompts/unity.md)),
+  ([HTML5](prompts/html5.md) · [React](prompts/react.md) · [React Native](prompts/react-native.md) · [Phaser](prompts/phaser.md) · [Unity](prompts/unity.md)),
   paste it into your agent, fill in your API key, and it implements the integration.
 - **Full reference** — [`CLAUDE.md`](CLAUDE.md) and [`llms.txt`](llms.txt) in this repo
   root give your agent the complete, AI-optimized API so it generates correct code.
