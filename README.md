@@ -6,12 +6,31 @@ Official integration examples and reference for [AppLixir](https://www.applixir.
 
 ---
 
-## Quick Start (Under 15 Minutes)
+## Choose your platform
+
+Each folder below is a **self-contained guide** with its own README, setup steps,
+and ready-to-copy code. Jump to yours:
+
+| Platform | Guide | What's inside |
+|---|---|---|
+| **HTML5 / Vanilla JS** | [`examples/html5/`](examples/html5/) | The base integration — one script tag |
+| **React (web)** | [`examples/react/`](examples/react/) | `useRewardedAd` hook (JS + TS) + component |
+| **React Native** | [`examples/react-native/`](examples/react-native/) | WebView integration (hosted page + RN screen) |
+| **Phaser 3** | [`examples/phaser3/`](examples/phaser3/) | Trigger from a Phaser Scene |
+| **Unity WebGL** | [`examples/unity-webgl/`](examples/unity-webgl/) | C# manager + jslib bridge |
+
+All platforms use the **same SDK and the same callback contract** — they differ
+only in how you load the script and wire the trigger. The shared rules
+([Key Concepts](#key-concepts)) apply everywhere.
+
+---
+
+## The core pattern (same in every framework)
 
 ### 1. Sign up and get your API key
 → https://client.applixir.com/register
 
-### 2. Add to your HTML
+### 2. Load the SDK and show an ad
 
 ```html
 <!-- 1. Load the SDK (pin to a specific version for production) -->
@@ -42,19 +61,8 @@ document.getElementById("watch-ad-btn").addEventListener("click", () => {
 </script>
 ```
 
-That's it. [Full documentation →](https://support.applixir.com)
-
----
-
-## Examples in This Repo
-
-| Platform | Location | Description |
-|---|---|---|
-| Vanilla JS | [`/examples/html5/`](examples/html5/) | Minimal working example with reward + error handling |
-| Phaser 3 | [`/examples/phaser3/`](examples/phaser3/) | Integration inside a Phaser Scene |
-| React (web) | [`/examples/react/`](examples/react/) | `useRewardedAd` hook (JS + TS) + component |
-| React Native | [`/examples/react-native/`](examples/react-native/) | WebView integration (hosted page + RN screen) |
-| Unity WebGL | [`/examples/unity-webgl/`](examples/unity-webgl/) | Unity manager + jslib bridge |
+That's it — and it's the same callback contract in React, Unity, and the rest.
+Pick your platform above for framework-specific setup. [Full documentation →](https://support.applixir.com)
 
 ---
 
