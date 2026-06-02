@@ -37,4 +37,7 @@ platform here is a thin wrapper around this same SDK.
 the reward only on `status.type === "complete"`. See the
 [status reference and reward rules](../../README.md#key-concepts) in the repo root.
 
+**Using an AI agent?** Copy [`prompts/html5.md`](../../prompts/html5.md) into Claude
+Code / Codex / Cursor and it implements this for you.
+
 Full docs: https://support.applixir.com
