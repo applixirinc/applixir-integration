@@ -9,6 +9,7 @@ so the agent gets it right on the first try.
 | HTML5 / Vanilla JS | [`html5.md`](html5.md) |
 | React (web) | [`react.md`](react.md) |
 | React Native | [`react-native.md`](react-native.md) |
+| Phaser 3 | [`phaser.md`](phaser.md) |
 | Unity WebGL | [`unity.md`](unity.md) |
 
 ## How to use

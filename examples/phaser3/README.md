@@ -32,7 +32,7 @@ after, so the game loop doesn't run behind the overlay.
 `adStatusCallbackFn` receives a status **object**. See the
 [status reference and reward rules](../../README.md#key-concepts) in the repo root.
 
-**Using an AI agent?** Phaser is HTML5-based — copy [`prompts/html5.md`](../../prompts/html5.md)
-into Claude Code / Codex / Cursor and tell it to trigger the ad from your Scene.
+**Using an AI agent?** Copy [`prompts/phaser.md`](../../prompts/phaser.md) into Claude
+Code / Codex / Cursor and it implements this for you.
 
 Full docs: https://support.applixir.com
