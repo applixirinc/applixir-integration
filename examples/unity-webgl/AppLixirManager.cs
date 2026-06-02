@@ -19,32 +19,40 @@ public class AppLixirManager : MonoBehaviour
         PlayRewardedAd("AppLixirManager", "OnAdStatusReceived");
 #else
         Debug.Log("AppLixir only runs in WebGL builds. Simulating reward for testing.");
-        OnAdStatusReceived("ad-watched");
+        OnAdStatusReceived("complete");
 #endif
     }
 
-    // This method is called by the JS bridge with the ad status
+    // This method is called by the JS bridge with the ad status.
+    // The bridge sends status.type (a string) — see AppLixirBridge.jslib.
     public void OnAdStatusReceived(string status)
     {
         Debug.Log("AppLixir ad status: " + status);
 
         switch (status)
         {
-            case "ad-watched":
-                // ✅ Grant the reward
+            case "complete":
+                // ✅ User watched the full ad — grant the reward.
                 GrantReward();
                 break;
 
-            case "no-ad":
-                Debug.Log("No ad available right now.");
+            case "allAdsCompleted":
+                // Fires at the end of any ad AND when no ad was available.
+                // Not a reward signal — use it to clean up / re-enable UI.
                 break;
 
-            case "ad-skipped":
-                Debug.Log("Ad was skipped. No reward.");
+            case "skipped":
+            case "manuallyEnded":
+                Debug.Log("Ad skipped or closed early. No reward.");
                 break;
 
-            case "ad-error":
+            case "consentDeclined":
+                Debug.Log("User declined personalized-ads consent. No reward.");
+                break;
+
+            case "error":
             case "sdk-not-loaded":
+                // Bridge-internal sentinels (see AppLixirBridge.jslib).
                 Debug.LogWarning("AppLixir error: " + status);
                 break;
         }
