@@ -86,6 +86,8 @@ document.getElementById("watch-ad-btn").addEventListener("click", () => {
 });
 ```
 
+**Faster reveal** — use `preloadAd()` to cut click-to-reveal from ~1.5–3.5s to ~100–300ms (see "Faster Ad Loading" below).
+
 **Advanced approach** — use the `Application` class for more lifecycle control:
 
 ```javascript
@@ -108,6 +110,56 @@ document.getElementById("watch-ad-btn").addEventListener("click", () => {
   app.openPlayer();
 });
 ```
+
+---
+
+## Faster Ad Loading — `preloadAd()` (optional, fast reveal)
+
+`initializeAndOpenPlayer()` runs the ad auction, requests the video, and buffers the
+creative **after** the click — so the user waits ~1.5–3.5s on a spinner. `preloadAd()`
+splits that work: it runs the auction + video request **ahead of the click** (on a
+high-intent signal), and the click only reveals an already-loaded ad in ~100–300ms.
+It is a third `window` global and takes the **same options object** as
+`initializeAndOpenPlayer()`.
+
+```javascript
+let adHandle = null;
+
+// 1. Preload on a HIGH-INTENT signal (reward modal mount, level complete,
+//    "out of coins" overlay) — NOT on page load. preloadAd() is async and
+//    returns a handle { show }.
+async function loadAd() {
+  try {
+    adHandle = await preloadAd(options);   // runs auction + video request now
+  } catch (e) {
+    adHandle = null;                        // no-fill / network error — fall back on click
+  }
+}
+
+// 2. On click, just reveal. Call show() inside the click handler so the
+//    user-gesture chain is preserved (required on iOS/Safari).
+document.getElementById("watch-ad-btn").addEventListener("click", async () => {
+  if (adHandle) {
+    await adHandle.show();                   // ~100–300ms
+    adHandle = null;                         // each handle is single-use
+    loadAd();                                // preload the next one
+  } else {
+    initializeAndOpenPlayer(options);        // fallback: standard (slower) path
+  }
+});
+```
+
+**Rules:**
+1. **Preload on intent, not on page load** — page-load preload wastes ad requests on visitors who never click.
+2. **Always keep an on-click fallback** — ~10–30% of preloads no-fill, and Incognito / blocked 3rd-party cookies can fail silently. Never call `show()` on a failed/absent handle; fall through to `initializeAndOpenPlayer()`.
+3. **Re-preload after each show** — each handle is single-use.
+4. **Bids expire (~5 min)** — if the gap between `preloadAd()` and `show()` may exceed that, refresh on a timer or re-preload on the next intent signal.
+
+**Always-visible "Watch Ad" button** (no single intent moment — the button is the intent):
+keep an ad loaded with `preloadAd()` when it first renders, refresh every ~4 min, and
+refresh on `visibilitychange → visible` (skip refreshes while the tab is backgrounded —
+Chrome throttles network and bids arrive stale). Full pattern:
+https://support.applixir.com/applixir-integration/integration-for-html5-sites-apps/advanced-faster-ad-loading-preload
 
 ---
 

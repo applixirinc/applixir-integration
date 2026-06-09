@@ -7,7 +7,7 @@ Publishers earn $4–15 CPM. Users watch a short video in exchange for an in-gam
 
 Current version: v6.1.0
 CDN URL: https://cdn.applixir.com/applixir.app.v6.1.0.js
-Exposes two globals on window: initializeAndOpenPlayer(options) and Application(options).
+Exposes three globals on window: initializeAndOpenPlayer(options), Application(options), and preloadAd(options).
 
 DEPRECATED (do not use): applixir.sdk2.1m.js, invokeApplixirVideoUnit(), zoneId/devId/gameId params
 
@@ -56,6 +56,34 @@ error.getError().data contains error details ({ type, errorCode, errorMessage, .
 const app = new Application(options);
 window.onload = () => { app.initialize(); };
 // then call app.openPlayer() on user action
+
+## Faster Ad Loading — preloadAd(options) (optional, for fast reveal)
+
+By default initializeAndOpenPlayer() runs the ad auction + video request AFTER the click,
+so the user waits ~1.5-3.5s on a spinner. preloadAd() splits that: it runs the auction +
+video request ahead of time (on a high-intent signal), and the click only reveals the
+already-loaded ad in ~100-300ms. Same options object as initializeAndOpenPlayer.
+
+preloadAd(options) is async and returns a handle { show }. Call show() from inside the
+click/tap handler (keeps the user-gesture chain — required on iOS/Safari).
+
+let adHandle = null;
+async function loadAd() {
+  try { adHandle = await preloadAd(options); }   // runs auction + video request now
+  catch (e) { adHandle = null; }                 // no-fill / error — fall back on click
+}
+loadAd();                                        // call on a high-intent signal, NOT page load
+btn.addEventListener("click", async () => {
+  if (adHandle) { await adHandle.show(); adHandle = null; loadAd(); } // reveal, then re-preload
+  else initializeAndOpenPlayer(options);         // fallback when preload missing/failed
+});
+
+Rules:
+- Preload on a high-intent signal (reward modal mount, level complete, "out of coins"), NOT on page load — page-load preload wastes ad requests on non-clickers.
+- Each handle is single-use. Re-call preloadAd() after each show() for the next click.
+- ALWAYS keep an on-click initializeAndOpenPlayer() fallback (~10-30% of preloads no-fill; Incognito / blocked 3p-cookies can fail silently).
+- Prebid video bids TTL after ~5 min; if the gap between preloadAd() and show() may exceed that, refresh on a timer or re-preload on the next intent signal.
+- For an always-visible "Watch Ad" button: preloadAd() when it first renders, refresh every ~4 min, and refresh on visibilitychange→visible (not while backgrounded).
 
 ## Requirements
 
