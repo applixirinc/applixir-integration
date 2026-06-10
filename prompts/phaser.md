@@ -34,6 +34,14 @@ on a user tap, grant the reward on completion, then resume the scene.
      "manuallyEnded", hide + resume without a reward.
    - adErrorCallbackFn: log error.getError().data, hide the container, resume the scene.
 
+## Faster reveal (recommended for production)
+window.preloadAd(options) runs the auction + video request AHEAD of the tap and returns a
+handle { show } — reveal in ~100-300ms instead of ~1.5-3.5s. Call preloadAd() when the reward
+button/scene appears (high intent), store the handle, and in the pointerdown handler call
+handle.show() if one exists, else initializeAndOpenPlayer(options). Re-preload after each show
+(handles are single-use), refresh if the gap may exceed ~5 min (bids expire), and ALWAYS keep
+the on-click fallback (some preloads no-fill; Incognito can fail silently).
+
 ## Hard rules
 - adStatusCallbackFn receives an OBJECT. Read status.type. NEVER compare status to a
   string like "ad-watched" — that is an old API and will never match.

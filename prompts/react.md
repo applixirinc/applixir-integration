@@ -37,6 +37,15 @@ npm package.
 4. Render the anchor <div id="applixir-ad-container" /> once and keep it mounted.
    Trigger showAd() from a user click; await it and grant the reward when it's true.
 
+## Faster reveal (recommended for production)
+window.preloadAd(options) runs the auction + video request AHEAD of the click and returns a
+handle { show } — reveal in ~100-300ms instead of ~1.5-3.5s. In the hook, expose a preload()
+(call it on a high-intent signal: reward modal mount, level-complete) and have showAd() call
+the preloaded handle's show() when one exists, else fall back to initializeAndOpenPlayer().
+Re-preload after each show (handles are single-use), refresh if the preload->click gap may
+exceed ~5 min (bids expire), and ALWAYS keep the on-click fallback (some preloads no-fill;
+Incognito / blocked 3rd-party cookies can fail silently). Call show() inside the user gesture.
+
 ## Hard rules
 - adStatusCallbackFn receives an OBJECT. Read status.type. NEVER compare status to a
   string like "ad-watched" — that is an old API and will never match.

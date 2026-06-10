@@ -35,7 +35,25 @@ the player and grant the reward when the ad completes.
      adErrorCallbackFn: (error) => { console.error(error.getError().data); },
    });
 
+5. RECOMMENDED for production — preload so the click reveals an already-loaded ad
+   (~100-300ms instead of ~1.5-3.5s). preloadAd() takes the SAME options object and
+   returns a handle { show }. Trigger it on a high-intent signal (reward modal mount,
+   level-complete, out-of-lives) — NOT on page load — and keep the on-click fallback:
+     let adHandle = null;
+     async function loadAd() {
+       try { adHandle = await preloadAd(options); }  // runs the auction + video request now
+       catch (e) { adHandle = null; }                // no-fill/error -> fall back on click
+     }
+     // inside the user-gesture (click/tap) handler:
+     if (adHandle) { await adHandle.show(); adHandle = null; loadAd(); }  // reveal + re-preload
+     else initializeAndOpenPlayer(options);          // fallback when no preload is ready
+
 ## Hard rules
+- Prefer preloadAd() for production (Step 5). Each handle is single-use — re-preload after
+  show(); bids expire ~5 min so refresh if the preload->click gap is long; ALWAYS keep the
+  initializeAndOpenPlayer on-click fallback (some preloads no-fill, and Incognito / blocked
+  3rd-party cookies can fail silently). Call show() INSIDE the click handler to preserve the
+  iOS/Safari user-gesture chain.
 - adStatusCallbackFn receives a STATUS OBJECT { type, ad?, error? }. Read status.type.
   NEVER compare status to a string like "ad-watched" — that is an old API and never matches.
 - Grant the reward ONLY on status.type === "complete". "allAdsCompleted" fires at the
