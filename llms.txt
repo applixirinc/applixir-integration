@@ -25,6 +25,7 @@ const options = {
   injectionElementId: "applixir-ad-container",
   adStatusCallbackFn: (status) => { if (status.type === "complete") grantReward(); },
   adErrorCallbackFn: (error) => { console.error(error.getError().data); },
+  userId: "player-123", // optional: your player id, sent to your server callback
 };
 initializeAndOpenPlayer(options);
 
@@ -112,13 +113,31 @@ Full guide: https://support.applixir.com/applixir-integration/react-integration/
 
 ## Unity WebGL
 
-Use ApplixirWebGL.PlayVideo(callback). Positive result: PlayVideoResult.ADWatched.
+Use the .jslib bridge in /examples/unity-webgl/: it calls initializeAndOpenPlayer and forwards
+status.type (a string) to C# via SendMessage. Grant only on "complete".
+There is NO ApplixirWebGL / PlayVideoResult API. Do not generate one.
 
-## Server-Side Callback (optional, recommended)
+## Server-Side Callback (recommended for persistent rewards)
 
-Configure in dashboard → Callbacks. AppLixir POSTs a signed HTTPS request to your endpoint
-after server-side validation of each completed ad. This is the source of truth for granting
-persistent rewards; treat the client-side "complete" as optimistic UI only.
+Source of truth for granting persistent rewards; treat client-side "complete" as optimistic UI only.
+
+SDK options: pass userId (your player id) and optionally customData (object) so they reach the callback.
+Configure in dashboard → Callbacks: URL (no "?" in it), secret, mode. Use mode md5AndTid.
+
+AppLixir sends an HTTPS GET to your URL with query params:
+- gameApiKey, gameId: always
+- secretKey: always, plaintext, deprecated (verify signature instead)
+- tid: unique transaction id (mode md5AndTid), the idempotency key
+- signature: md5(gameApiKey + gameId + userId + tid + secret), lowercase hex, "" for absent values (modes md5Only, md5AndTid)
+- userId, customData (URL-encoded JSON): if passed to the SDK
+
+Handler: verify signature (constant-time), require userId, insert tid under a unique constraint in the
+same transaction as the credit, decide the amount server-side, return 2xx within 10s. No retries.
+
+## Testing
+
+No test API key: use your real key on the registered domain (not localhost). AppLixir approves new
+sites manually; until approved, the site is served AppLixir test ads.
 
 ## Links
 
