@@ -78,6 +78,8 @@ const options = {
   adErrorCallbackFn: (error) => {         // OPTIONAL but recommended
     console.error("Ad error:", error.getError().data);
   },
+
+  userId: "player-123",                   // OPTIONAL: your player id, sent to your server callback
 };
 
 // Trigger on user action (button click, level complete, etc.)
@@ -255,15 +257,54 @@ Get your current ads.txt entries from the AppLixir dashboard → Settings → Ad
 
 ---
 
-## Server-Side Reward Callback (Optional but Recommended)
+## Server-Side Reward Callback (Recommended for persistent rewards)
 
-For fraud-proof reward delivery, AppLixir can POST to your server when a reward is earned.
+For fraud-resistant reward delivery, AppLixir calls your server when an ad is watched
+to completion. This is the source of truth for granting persistent rewards; treat the
+client-side `status.type === "complete"` as optimistic UI only.
 
-Configure in: AppLixir Dashboard → Callbacks → enter your endpoint URL + secret.
+**1. Tell the SDK who the player is.** Pass your player's id in the options (and,
+optionally, a small `customData` object). Without `userId` your server can't tell whom
+to credit.
 
-AppLixir sends a signed HTTPS POST to your server after each verified ad completion.
-This is the source of truth for granting persistent rewards; treat the client-side
-`status.type === "complete"` as optimistic UI only.
+```javascript
+const options = {
+  apiKey: "xxxx-xxxx-xxxx-xxxx",
+  injectionElementId: "applixir-ad-container",
+  userId: currentPlayer.id,             // returned to your callback as `userId`
+  customData: { placement: "shop" },    // optional; returned as URL-encoded JSON
+  adStatusCallbackFn: (status) => { /* ... */ },
+  adErrorCallbackFn: (error) => { /* ... */ },
+};
+```
+
+`customData` comes from the browser, so never read a reward amount from it.
+
+**2. Configure** in AppLixir Dashboard → Callbacks: endpoint URL, secret, and mode. Settings
+can be account-wide or per game. A game's own URL/secret/mode override the account's.
+Don't put a `?` query string in the URL, because AppLixir appends its own.
+
+**3. Handle the request.** AppLixir sends an **HTTPS GET** to your URL:
+
+| Query param | Sent | Meaning |
+|---|---|---|
+| `gameApiKey` | always | The API key the ad ran under |
+| `gameId` | always | AppLixir's id for the game |
+| `secretKey` | always | Your callback secret, in plaintext. **Deprecated:** verify `signature` instead |
+| `tid` | mode `md5AndTid` | Unique transaction id, your idempotency key |
+| `signature` | modes `md5Only`, `md5AndTid` | `md5(gameApiKey + gameId + userId + tid + secret)`, lowercase hex; use `""` for any absent value |
+| `userId` | if passed to the SDK | Your player id |
+| `customData` | if passed to the SDK | URL-encoded JSON |
+
+**Use mode `md5AndTid`.** Your endpoint should:
+1. Recompute `signature` and compare it in constant time.
+2. Require `userId`.
+3. Store `tid` under a **unique constraint in the same transaction** as the credit, so a replay or duplicate is ignored.
+4. Decide the reward amount server-side.
+5. Return `2xx` within 10 seconds.
+
+**There are no retries**, so keep the handler fast. Don't log the query string, because
+it contains your secret.
 
 ---
 
@@ -292,8 +333,9 @@ Ensure the div `#applixir-ad-container` exists in your HTML, outside the Phaser 
 See `/examples/phaser3/`.
 
 ### Unity WebGL
-Use the Unity package from AppLixir — see `/examples/unity-webgl/` in this repo.
-Call `ApplixirWebGL.PlayVideo(callback)`. The only positive result is `PlayVideoResult.ADWatched`.
+Use the `.jslib` bridge in `/examples/unity-webgl/`: `AppLixirBridge.jslib` calls the SDK and
+forwards `status.type` (a string) to C# via `SendMessage`; `AppLixirManager.cs` grants the reward
+only on `"complete"`. There is no `ApplixirWebGL` / `PlayVideoResult` API. Don't generate one.
 
 ### WordPress
 Install the AppLixir WordPress plugin — no manual code required.
@@ -322,7 +364,9 @@ Available in the WordPress plugin directory or via support.applixir.com.
 4. Click your ad trigger button
 5. You should see the lifecycle in order: `loaded` → `started` → `firstQuartile` → `midpoint` → `thirdQuartile` → `complete`
 
-No test/sandbox API key is required — use your real API key from the start.
+No test/sandbox API key is required: use your real API key from the start. AppLixir reviews
+and approves each new site manually. **Until your site is approved it is served AppLixir test
+ads**, so you can exercise the full lifecycle (and your server callback) before going live.
 
 ---
 
